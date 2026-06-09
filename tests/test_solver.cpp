@@ -1,84 +1,78 @@
 #include <gtest/gtest.h>
-#include "../src/BigNumber/BigNumber.hpp"
-#include "../src/Solver/Solver.hpp"
-#include "../src/Interpreter/Interpreter.hpp"
+#include "../src/BigDecimal/BigDecimal.hpp"
+#include "../src/QuadSolver/QuadSolver.hpp"
 
-// Тесты интерпретатора
-TEST(InterpreterTest, ValidInput) {
-    auto result = Interpreter::parse("1,2,3");
-    EXPECT_TRUE(result.valid);
-    EXPECT_EQ(result.a.toString(), "1");
+static std::string norm(const std::string& s) {
+    std::string r = s;
+    size_t dot = r.find('.');
+    if (dot != std::string::npos) {
+        while (r.back() == '0') r.pop_back();
+        if (r.back() == '.') r.pop_back();
+    }
+    return r;
 }
 
-TEST(InterpreterTest, InvalidInputLetters) {
-    auto result = Interpreter::parse("a,b,c");
-    EXPECT_FALSE(result.valid);
-}
-
-TEST(InterpreterTest, ValidWithSpaces) {
-    auto result = Interpreter::parse(" 1 , 2 , 3 ");
-    EXPECT_TRUE(result.valid);
-}
-
-TEST(InterpreterTest, ValidNegative) {
-    auto result = Interpreter::parse("-1,-2,-3");
-    EXPECT_TRUE(result.valid);
-    EXPECT_EQ(result.a.toString(), "-1");
-}
-
-// Тесты решения уравнений
 TEST(SolverTest, QuadraticTwoRoots) {
-    auto result = Solver::solve(BigNumber(1), BigNumber(-3), BigNumber(2));
-    EXPECT_EQ(result.getType(), ResultType::OK);
-    EXPECT_EQ(result.getRoots().size(), 2);
+    auto sol = QuadSolver::solve(BigDecimal("1"), BigDecimal("-3"), BigDecimal("2"));
+    EXPECT_TRUE(sol.hasSolutions);
+    EXPECT_EQ(sol.rootCount, 2);
 }
 
 TEST(SolverTest, QuadraticOneRoot) {
-    auto result = Solver::solve(BigNumber(1), BigNumber(-2), BigNumber(1));
-    EXPECT_EQ(result.getType(), ResultType::OK);
-    EXPECT_EQ(result.getRoots().size(), 1);
+    auto sol = QuadSolver::solve(BigDecimal("1"), BigDecimal("-2"), BigDecimal("1"));
+    EXPECT_TRUE(sol.hasSolutions);
+    EXPECT_EQ(sol.rootCount, 1);
 }
 
-TEST(SolverTest, QuadraticNoRoots) {
-    auto result = Solver::solve(BigNumber(1), BigNumber(0), BigNumber(1));
-    EXPECT_EQ(result.getType(), ResultType::NO_SOLUTION);
+TEST(SolverTest, QuadraticComplexRoots) {
+    auto sol = QuadSolver::solve(BigDecimal("1"), BigDecimal("0"), BigDecimal("1"));
+    EXPECT_TRUE(sol.hasSolutions);
+    EXPECT_EQ(sol.rootCount, 2);
+    EXPECT_TRUE(sol.realRoots.empty());
 }
 
 TEST(SolverTest, LinearOneRoot) {
-    auto result = Solver::solve(BigNumber(0), BigNumber(2), BigNumber(-4));
-    EXPECT_EQ(result.getType(), ResultType::OK);
-    EXPECT_EQ(result.getRoots().size(), 1);
+    auto sol = QuadSolver::solve(BigDecimal("0"), BigDecimal("2"), BigDecimal("-4"));
+    EXPECT_TRUE(sol.hasSolutions);
+    EXPECT_EQ(sol.rootCount, 1);
+    EXPECT_EQ(norm(sol.realRoots[0].toString()), "2");
 }
 
 TEST(SolverTest, LinearNoRoots) {
-    auto result = Solver::solve(BigNumber(0), BigNumber(0), BigNumber(5));
-    EXPECT_EQ(result.getType(), ResultType::NO_SOLUTION);
+    auto sol = QuadSolver::solve(BigDecimal("0"), BigDecimal("0"), BigDecimal("5"));
+    EXPECT_FALSE(sol.hasSolutions);
+    EXPECT_FALSE(sol.infinite);
 }
 
 TEST(SolverTest, InfiniteRoots) {
-    auto result = Solver::solve(BigNumber(0), BigNumber(0), BigNumber(0));
-    EXPECT_EQ(result.getType(), ResultType::INF);
+    auto sol = QuadSolver::solve(BigDecimal("0"), BigDecimal("0"), BigDecimal("0"));
+    EXPECT_TRUE(sol.infinite);
 }
 
-// Тесты длинной арифметики
-TEST(BigNumberTest, Addition) {
-    BigNumber a("123456789");
-    BigNumber b("987654321");
-    BigNumber c = a + b;
-    EXPECT_EQ(c.toString(), "1111111110");
+TEST(BigDecimalTest, Multiplication) {
+    BigDecimal a("123.456"), b("0.5");
+    auto res = a * b;
+    EXPECT_EQ(norm(res.toString()), "61.728");
 }
 
-TEST(BigNumberTest, Multiplication) {
-    BigNumber a("12345");
-    BigNumber b("6789");
-    BigNumber c = a * b;
-    EXPECT_EQ(c.toString(), "83810205");
+TEST(BigDecimalTest, Division) {
+    BigDecimal a("10"), b("3");
+    auto res = a / b;
+    std::string s = res.toString();
+    EXPECT_TRUE(s.find("3.33") != std::string::npos);
 }
 
-TEST(BigNumberTest, LargeNumbers) {
-    std::string large = "123456789012345678901234567890";
-    BigNumber bn(large);
-    EXPECT_EQ(bn.toString(), large);
+TEST(BigDecimalTest, ParseScientific) {
+    BigDecimal a("1e-100");
+    EXPECT_TRUE(a.isValid());
+    EXPECT_FALSE(a.isZero());
+}
+
+TEST(BigDecimalTest, LargeAddition) {
+    BigDecimal a("999999999999999999999999999999");
+    BigDecimal b("1");
+    auto res = a + b;
+    EXPECT_EQ(res.toString(), "1000000000000000000000000000000");
 }
 
 int main(int argc, char** argv) {

@@ -1,39 +1,40 @@
-# Сборка
+# Папка сборки
 build/
 Release/
 Debug/
-x64/
-x86/
 
-# Файлы программ
+# Файлы компиляции
 *.exe
 *.exe.stackdump
-*.out
 *.o
 *.obj
+*.out
 
-# CMake
+# Файлы CMake
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
 CMakeUserPresets.json
 
-# IDE
-.vscode/
-.idea/
+# Файлы IDE (Visual Studio)
+.vs/
 *.user
-*.suo
 *.sln
 *.vcxproj
 *.filters
 
-# Временные файлы
-*.tmp
-*.log
-*.stackdump
+# Файлы IDE (VSCode)
+.vscode/
+.idea/
 
-# OS файлы
-.DS_Store
+# Временные файлы Windows
 Thumbs.db
 desktop.ini
+
+# Логи
+*.log
+*.tmp
+
+# Файлы операционной системы
+.DS_Store
